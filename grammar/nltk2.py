@@ -1,27 +1,88 @@
-import nltk, re
+import re, nltk, random
 
 # https://developers.google.com/edu/python/regular-expressions
 # http://www.dotnetperls.com/re
 # http://blog.quibb.org/2010/01/nltk-regular-expression-parser-regexpparser/
 # http://www.eecis.udel.edu/~trnka/CISC889-11S/lectures/armstrong-nltk-tagging.pdf
 
-text = '''
-When the modern Olympics began in 1896, the initiators and organizers ---- looking for a great popularizing event, recalling the ancient glory of Greece. The idea of a marathon race came from Michel Breal, who wanted the event to feature in the first modern Olympic Games in 1896 in Athens. This idea was heavily supported by Pierre de Coubertin, the founder of the modern Olympics, as well as by the Greeks. The Greeks staged a selection race for the Olympic marathon on 10 March 1896 that ---- won by Charilaos Vasilakos in 3 hours and 18 minutes (with the future winner of the introductory Olympic Games marathon coming in fifth). The winner of the first Olympic Marathon, on 10 April 1896 (a male-only race), was Spyridon "Spyros" Louis, a Greek water-carrier, in 2 hours 58 minutes and 50 seconds. The women's marathon ---- introduced at the 1984 Summer Olympics (Los Angeles, USA) and ---- won by Joan Benoit of the United States with a time of 2 hours 24 minutes and 52 seconds. Since the modern games were founded, it has become a tradition for the men's Olympic marathon to be the last event of the athletics calendar, with a finish inside the Olympic stadium, often within hours of, or even incorporated into, the closing ceremonies. The marathon of the 2004 Summer Olympics revived the traditional route from Marathon to Athens, ending at Panathinaiko Stadium, the venue for the 1896 Summer Olympics. Since the modern games ---- founded, it has become a tradition for the men's Olympic marathon to be the last event of the athletics calendar, with a finish inside the Olympic stadium, often within hours of, or even incorporated into, the closing ceremonies. The marathon of the 2004 Summer Olympics revived the traditional route from Marathon to Athens, ending at Panathinaiko Stadium, the venue for the 1896 Summer Olympics. The Olympic men's record ---- 2:06:32.  
-'''
-# with open("corpus.txt", "r"):
 
-f = open("corpus.txt","r")
+def pure_random():
+	return ['am','are','were','was','is','been','being','be'][random.randrange(0, 8)]
+def semi_random(l):
+	return l[random.randrange(0, len(l)-1)]
 
+def POS_tagger(word_phrase):
+	patterns = [
+	# cardinal numbers
+	(r'^-?[0-9]+(.[0-9]+)?$', 'CD'),
+    # singular nouns (default)
+	(r'^she$', 'NNP'), (r'^he$', 'NNP'), (r'^it$', 'NNP'),
+
+	# Have only
+	(r'^have$', 'HAVE'), (r'^has$', 'HAVE'), (r'^had$', 'HAVE'),
+	#Modals
+	(r'^can$', 'MD'), (r'^may$', 'MD'), (r'^could$', 'MD'), (r'^to$', 'MD'), (r'^must$', 'MD'), (r'^should$', 'MD'), (r'^might$', 'MD'), (r'^will$', 'MD'),(r'^would$', 'MD'),
+	#Verbs
+	(r'^won$', 'VBD'),
+	# past tense verbs
+	(r'.*ed$', 'VBD'), 
+	# adjectives
+	(r'.*able$', 'JJ'), 
+	# nouns formed from adjectives
+	(r'.*ness$', 'NN'), 
+	# adverbs
+	(r'.*ly$', 'RB'), 
+	# gerunds
+	(r'.*ing$', 'VBG'), 
+
+	# I only
+	(r'^i$', 'NNP'),
+
+	# plural proper nouns
+	(r'^[A-Z].*s$', 'NNPS'), (r'^they$', 'NNPS'),(r'^we$', 'NNPS'),
+	# plural nouns
+	(r'.*s$', 'NNS'), 
+	# singular proper nouns
+	(r'^[A-Z].*$', 'NNP')
+	
+	]
+
+	tagger = nltk.RegexpTagger(patterns)
+	return tagger.tag(word_phrase)
+# Strip Stop Words
 # ['am','are','were','was','is','been','being','be']
-for line in f.read().split("."):
-	matchObj = re.findall( r'(.*) are (.*?) .*', line.strip(), re.M|re.I)
+# KK = int(raw_input())
+# TEXT =  raw_input().replace(",", "").replace(".", "")
+TEXT =  """
+President Obama arrived in Seoul, South Korea, Friday to news that North Korea may ---- counting down to a nuclear weapons test. Such moves out of Pyongyang ---- no surprise and are typical for the North's behavior, Obama told reporters while in Tokyo, his previous stop on his Asia trip. The President said has ---- prepared to deliver a firm response, if a test ---- conducted during his visit. North Korea's heightened activity at its nuclear test site ---- already known. But now the final step needed for an underground detonation has ---- taken, a South Korean government official said Thursday. The North has closed off the entrance to the tunnel at the Punggye-ri nuclear test site, the official said. That gives Pyongyang 11 days to either detonate a nuclear device or cancel the test. It would ---- the North's fourth test of a nuclear weapon. Both Obama and South Korean President Park Geun-hye want to display a united front against North Korea, and the communist dictatorship has reacted to the American President's visit with condemnation.
+""".replace(",", "").replace(".", "")
 
-	if matchObj:
-	   # print "matchObj.group() : ", matchObj.group()
-	   # print "matchObj.group(1) : ", matchObj.group(1)
-	   # print "matchObj.group(2) : ", matchObj.group(2)
-	   print [x for x in matchObj]
+matchObj = re.findall( r'(\w+) ---- (\w+)', TEXT.strip(), re.M|re.I)
+for x in matchObj:
+	tags = POS_tagger(x)
+	print tags
+	# Modal
+	if tags[0][1] == "MD":
+		print "be"
+	
+	# elif tags[0][1] == "I":
+	# 	if tags[1][1] == "I":
+	# 	print semi_random(["was", "am", "is"])
+	
+	elif tags[0][1] == "HAVE":
+		print "been"
+
+	# Plurual Subject
+	elif tags[0][1] == "NNS" or tags[0][1] == "NNPS": 
+		# print semi_random(["were", "are"])
+		if tags[1][1] == "VBG":
+			print semi_random(["were", "are"])
+		# past tense verbs
+		elif tags[1][1] == "VBD":
+			print semi_random(["were", "are"])
+		else:
+			print "are"
+	elif tags[0][1] == "NN" or tags[0][1] == "NNP":
+		print semi_random(["was", "is"])
 	else:
-	   print "No match!!"
-
-
+		print semi_random(['been','being','be'])
